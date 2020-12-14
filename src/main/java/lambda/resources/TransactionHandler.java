@@ -1,6 +1,6 @@
 package lambda.resources;
 
-import java.sql.Connection;
+import io.vavr.control.Try;
 
 public class TransactionHandler {
 
@@ -8,18 +8,28 @@ public class TransactionHandler {
         System.out.println( "Creating connection" );
         Connection connection = getConnection();
 
-        try {
-            System.out.println( "Executing instructions" );
-            transaction.execute(connection);
-        }
-        finally {
-            System.out.println( "Closing connection" );
-            connection.close();
-        }
+        Try.run( () -> {
+                System.out.println( "Executing instructions" );
+                transaction.execute(connection);
+            }).andFinally( () ->
+             {
+                System.out.println( "Closing connection" );
+                connection.close();
+            });
     }
 
     public static Connection getConnection() {
-        return null;
+        return new Connection() {
+            @Override
+            public void commit() {
+                System.out.println( "Committing transaction" );
+            }
+
+            @Override
+            public void close() {
+                System.out.println( "Closing connection" );
+            }
+        };
     }
 
     public static void main(String[] args) throws Exception {
