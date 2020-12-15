@@ -1,28 +1,42 @@
 package lambda.resources;
 
-import java.sql.Connection;
+import io.vavr.control.Try;
 
 public class TransactionHandler {
 
-    public static void runInTransaction( Transaction transaction ) throws Exception {
+    public static void runInTransaction( Transaction transaction ) {
         System.out.println( "Creating connection" );
         Connection connection = getConnection();
 
-        try {
-            System.out.println( "Executing instructions" );
-            transaction.execute(connection);
-        }
-        finally {
-            System.out.println( "Closing connection" );
-            connection.close();
-        }
+        Try.run(
+            ()-> {
+                System.out.println( "Executing instructions" );
+                transaction.execute(connection);
+                connection.commit();
+            }
+        ).andFinally(
+            () -> connection.close()
+        ).onFailure(
+                e -> System.out.println(e)
+        );
     }
 
     public static Connection getConnection() {
-        return null;
+        return new Connection(){
+            public void commit() {
+                System.out.println( "Committing transaction" );
+            }
+
+            public void close() throws RuntimeException {
+                System.out.println( "Closing connection" );
+                throw new RuntimeException( "exception in close" );
+            }
+        };
     }
 
     public static void main(String[] args) throws Exception {
-        TransactionHandler.runInTransaction( connection -> {});
+        TransactionHandler.runInTransaction( connection -> {
+            //All transactional code goes here.
+        });
     }
 }
