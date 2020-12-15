@@ -8,28 +8,27 @@ public class TransactionHandler {
         System.out.println( "Creating connection" );
         Connection connection = getConnection();
 
-        Try.run(
-            ()-> {
+        Try.run( () -> {
                 System.out.println( "Executing instructions" );
                 transaction.execute(connection);
                 connection.commit();
-            }
-        ).andFinally(
-            () -> connection.close()
-        ).onFailure(
-                e -> System.out.println(e)
-        );
+            }).andFinally( () ->
+             {
+                System.out.println( "Closing connection" );
+                connection.close();
+            });
     }
 
     public static Connection getConnection() {
-        return new Connection(){
+        return new Connection() {
+            @Override
             public void commit() {
                 System.out.println( "Committing transaction" );
             }
 
-            public void close() throws RuntimeException {
+            @Override
+            public void close() {
                 System.out.println( "Closing connection" );
-                throw new RuntimeException( "exception in close" );
             }
         };
     }
